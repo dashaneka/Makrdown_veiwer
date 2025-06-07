@@ -3,676 +3,420 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Markdown Previewer</title>
+    <title>Live Markdown Editor & Reader</title>
+    <!-- Syntax Highlighting CSS (Atom One Dark theme) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            /* Shared */
+            --radius-md: 10px;
+            --radius-lg: 20px;
+            --transition-speed: 0.3s;
+
+            /* Dark Theme (Default) */
+            --bg-gradient-dark: linear-gradient(135deg, #f78ca0 0%, #f9748f 19%, #fd868c 60%, #fe9a8b 100%);
+            --accent-gradient-dark: linear-gradient(135deg, #ff7e5f 0%, #feb47b 100%);
+            --accent-1-dark: #ff7e5f;
+            --accent-1-dark-rgb: 255, 126, 95;
+            --accent-2-dark: #e86a73;
+            --accent-3-dark: #d15887;
+            --text-main-dark: #f0f0f0;
+            --text-muted-dark: #ccc;
+            --bg-main-dark: rgba(30, 30, 30, 0.85);
+            --bg-editor-dark: #252526;
+            --bg-preview-dark: #1e1e1e;
+            --border-color-dark: rgba(255, 255, 255, 0.1);
+            --blockquote-bg-dark: rgba(255, 126, 95, 0.05);
+            --code-bg-dark: rgba(255, 255, 255, 0.1);
+            --table-bg-dark: rgba(255, 255, 255, 0.02);
+            --table-header-bg-dark: rgba(255, 126, 95, 0.2);
+
+
+            /* Light Theme */
+            --bg-gradient-light: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+            --accent-gradient-light: linear-gradient(135deg, #ff8c42 0%, #ff5c5c 100%);
+            --accent-1-light: #ff6b6b;
+            --accent-1-light-rgb: 255, 107, 107;
+            --accent-2-light: #f06595;
+            --accent-3-light: #cc5de8;
+            --text-main-light: #212529;
+            --text-muted-light: #555;
+            --bg-main-light: rgba(255, 255, 255, 0.85);
+            --bg-editor-light: #f8f9fa;
+            --bg-preview-light: #ffffff;
+            --border-color-light: #dee2e6;
+            --blockquote-bg-light: #fff3bf;
+            --code-bg-light: #e9ecef;
+            --table-bg-light: #f8f9fa;
+            --table-header-bg-light: rgba(255, 107, 107, 0.15);
         }
 
         body {
+            /* Default to dark theme variables */
+            --bg-gradient: var(--bg-gradient-dark);
+            --accent-gradient: var(--accent-gradient-dark);
+            --accent-1: var(--accent-1-dark);
+            --accent-1-rgb: var(--accent-1-dark-rgb);
+            --accent-2: var(--accent-2-dark);
+            --accent-3: var(--accent-3-dark);
+            --text-main: var(--text-main-dark);
+            --text-muted: var(--text-muted-dark);
+            --bg-main: var(--bg-main-dark);
+            --bg-editor: var(--bg-editor-dark);
+            --bg-preview: var(--bg-preview-dark);
+            --border-color: var(--border-color-dark);
+            --blockquote-bg: var(--blockquote-bg-dark);
+            --code-bg: var(--code-bg-dark);
+            --table-bg: var(--table-bg-dark);
+            --table-header-bg: var(--table-header-bg-dark);
+
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--bg-gradient);
             min-height: 100vh;
-            padding: 20px;
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            transition: background var(--transition-speed) ease;
+        }
+
+        body.light-theme {
+            --bg-gradient: var(--bg-gradient-light);
+            --accent-gradient: var(--accent-gradient-light);
+            --accent-1: var(--accent-1-light);
+            --accent-1-rgb: var(--accent-1-light-rgb);
+            --accent-2: var(--accent-2-light);
+            --accent-3: var(--accent-3-light);
+            --text-main: var(--text-main-light);
+            --text-muted: var(--text-muted-light);
+            --bg-main: var(--bg-main-light);
+            --bg-editor: var(--bg-editor-light);
+            --bg-preview: var(--bg-preview-light);
+            --border-color: var(--border-color-light);
+            --blockquote-bg: var(--blockquote-bg-light);
+            --code-bg: var(--code-bg-light);
+            --table-bg: var(--table-bg-light);
+            --table-header-bg: var(--table-header-bg-light);
+        }
+
+        #readingProgress {
+            position: fixed; top: 0; left: 0; height: 4px;
+            background: var(--accent-gradient); width: 0%; z-index: 100;
+            transition: width 0.1s linear;
         }
 
         .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-            backdrop-filter: blur(10px);
+            flex-grow: 1; display: flex; flex-direction: column;
+            max-width: 1600px; margin: 20px auto; width: calc(100% - 40px);
+            background: var(--bg-main); border-radius: var(--radius-lg);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2); overflow: hidden;
+            backdrop-filter: blur(15px); border: 1px solid var(--border-color);
+            transition: background var(--transition-speed) ease, border-color var(--transition-speed) ease;
         }
 
         .header {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            padding: 30px;
-            text-align: center;
-            color: white;
+            background: var(--accent-gradient); padding: 25px 40px; text-align: center;
+            color: white; flex-shrink: 0;
+            transition: background var(--transition-speed) ease;
+        }
+        .header h1 { font-size: 2.2rem; margin-bottom: 8px; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); }
+        .header p { font-size: 1.1rem; opacity: 0.9; }
+
+        .main-content {
+            display: flex; flex-grow: 1; overflow: hidden;
+            transition: all var(--transition-speed) ease;
+        }
+        .main-content.editor-hidden .editor-section { flex: 0; padding: 0; border-right: none; opacity: 0; pointer-events: none; }
+
+        .editor-section, .preview-section {
+            flex: 1; display: flex; flex-direction: column;
+            overflow-y: auto; padding: 20px;
+            transition: all var(--transition-speed) ease;
         }
 
-        .header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        .editor-section { border-right: 1px solid var(--border-color); }
+        
+        .pane-header {
+            padding: 10px 0; margin-bottom: 15px; border-bottom: 2px solid var(--accent-1);
+            font-size: 1.2rem; font-weight: 600; color: var(--text-main);
+            display: flex; justify-content: space-between; align-items: center;
+            transition: all var(--transition-speed) ease;
         }
 
-        .header p {
-            font-size: 1.1rem;
-            opacity: 0.9;
+        #markdownInput {
+            flex-grow: 1; width: 100%;
+            background: var(--bg-editor); border: 1px solid var(--border-color);
+            border-radius: var(--radius-md); padding: 20px; color: var(--text-main);
+            font-family: 'Consolas', 'Monaco', monospace; font-size: 1rem; line-height: 1.6; resize: none;
+            transition: all var(--transition-speed) ease;
         }
-
-        .upload-section {
-            padding: 40px;
-            text-align: center;
-            border-bottom: 1px solid #e0e0e0;
-        }
-
-        .file-input-container {
-            position: relative;
-            display: inline-block;
-            margin-bottom: 20px;
-        }
-
-        .file-input {
-            position: absolute;
-            opacity: 0;
-            width: 100%;
-            height: 100%;
-            cursor: pointer;
+        #markdownInput:focus {
+            outline: none; border-color: var(--accent-1);
+            /* **FIX**: Replaced color-mix() with rgba() using CSS variables */
+            box-shadow: 0 0 0 3px rgba(var(--accent-1-rgb), 0.3);
         }
 
         .file-input-button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 15px 30px;
-            border-radius: 50px;
-            border: none;
-            font-size: 1.1rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            background: transparent; color: var(--accent-1);
+            padding: 10px 20px; border-radius: 50px; border: 2px solid var(--accent-1);
+            font-size: 0.9rem; cursor: pointer; transition: all var(--transition-speed) ease;
         }
-
-        .file-input-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
-        }
-
-        .file-name {
-            margin-top: 15px;
-            font-size: 1rem;
-            color: #666;
-            font-style: italic;
-        }
-
-        .preview-section {
-            display: none;
-            padding: 40px;
-        }
+        .file-input-button:hover { background: var(--accent-1); color: white; }
+        .file-name { margin-top: 10px; font-size: 0.9rem; color: var(--text-muted); font-style: italic; min-height: 1.2em; }
 
         .preview-content {
-            background: #1a1a1a;
-            border-radius: 15px;
-            padding: 40px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            line-height: 1.8;
+            background: var(--bg-preview); border-radius: var(--radius-md);
+            padding: 30px 40px; transition: all var(--transition-speed) ease;
         }
 
         /* Markdown styling */
-        .preview-content h1 {
-            color: #4facfe;
-            font-size: 2.5rem;
-            margin-bottom: 25px;
-            border-bottom: 3px solid #4facfe;
-            padding-bottom: 15px;
-            font-weight: 700;
-        }
+        .preview-content h1, .preview-content h2, .preview-content h3 { font-weight: 600; margin-top: 1.5em; margin-bottom: 0.8em; }
+        .preview-content h1 { color: var(--accent-1); font-size: 2.2rem; border-bottom: 3px solid var(--accent-1); padding-bottom: 10px; }
+        .preview-content h2 { color: var(--accent-2); font-size: 1.8rem; border-bottom: 2px solid var(--border-color); padding-bottom: 8px; }
+        .preview-content h3 { color: var(--accent-3); font-size: 1.5rem; }
+        .preview-content p { color: var(--text-main); margin-bottom: 1em; }
+        .preview-content ul, .preview-content ol { color: var(--text-main); margin: 1em 0 1em 25px; }
+        .preview-content blockquote { border-left: 4px solid var(--accent-1); margin: 1.5em 0; font-style: italic; color: var(--text-muted); background: var(--blockquote-bg); padding: 1em 1.5em; border-radius: 0 var(--radius-md) var(--radius-md) 0; }
+        .preview-content pre { border-radius: var(--radius-md); margin: 1.5em 0; border: 1px solid var(--border-color); font-size: 0.95em; }
+        .preview-content a { color: var(--accent-1); text-decoration: none; border-bottom: 1px dashed var(--accent-1); }
+        .preview-content a:hover { background-color: var(--accent-1); color: white; border-bottom-style: solid; }
+        /* **FIX**: Replaced color-mix() with dedicated CSS variables */
+        .preview-content code { background: var(--code-bg); padding: 3px 6px; border-radius: 4px; font-family: 'Consolas', 'Monaco', monospace; color: var(--accent-2); font-size: 0.9em; }
+        .preview-content table { width: 100%; border-collapse: collapse; margin: 1.5em 0; background: var(--table-bg); border-radius: var(--radius-md); overflow: hidden; }
+        .preview-content th { background: var(--table-header-bg); color: var(--accent-1); padding: 15px; text-align: left; }
+        .preview-content td { padding: 12px 15px; border-bottom: 1px solid var(--border-color); }
+        .preview-content hr { border: none; height: 2px; background: linear-gradient(90deg, transparent, var(--accent-1), transparent); margin: 2em 0; }
+        
+        .header-controls { display: flex; align-items: center; gap: 5px; position: relative; }
+        .icon-button { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-main); padding: 5px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
+        .icon-button:hover { background: var(--border-color); }
 
-        .preview-content h2 {
-            color: #667eea;
-            font-size: 2rem;
-            margin: 30px 0 20px 0;
-            font-weight: 600;
+        .settings-panel {
+            position: absolute; right: 0; top: 100%; margin-top: 10px;
+            background: var(--bg-preview); border: 1px solid var(--border-color);
+            border-radius: var(--radius-md); padding: 15px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15); z-index: 10;
+            width: 280px; display: none;
         }
+        .settings-panel.active { display: block; }
+        .setting { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .setting:last-child { margin-bottom: 0; }
+        .setting-label { font-size: 0.9rem; font-weight: normal; }
+        .setting-controls button { font-size: 1rem; width: 30px; height: 30px; }
 
-        .preview-content h3 {
-            color: #764ba2;
-            font-size: 1.6rem;
-            margin: 25px 0 15px 0;
-            font-weight: 600;
-        }
-
-        .preview-content h4 {
-            color: #9c88ff;
-            font-size: 1.3rem;
-            margin: 20px 0 12px 0;
-            font-weight: 600;
-        }
-
-        .preview-content h5 {
-            color: #b794f6;
-            font-size: 1.1rem;
-            margin: 18px 0 10px 0;
-            font-weight: 600;
-        }
-
-        .preview-content h6 {
-            color: #d6bcfa;
-            font-size: 1rem;
-            margin: 15px 0 8px 0;
-            font-weight: 600;
-        }
-
-        .preview-content p {
-            color: white;
-            margin-bottom: 18px;
-            font-size: 1.05rem;
-        }
-
-        .preview-content ul, .preview-content ol {
-            color: white;
-            margin: 15px 0 15px 30px;
-        }
-
-        .preview-content li {
-            margin-bottom: 8px;
-            font-size: 1.05rem;
-        }
-
-        .preview-content blockquote {
-            border-left: 4px solid #4facfe;
-            padding-left: 20px;
-            margin: 20px 0;
-            font-style: italic;
-            color: #e0e0e0;
-            background: rgba(79, 172, 254, 0.1);
-            padding: 15px 20px;
-            border-radius: 0 10px 10px 0;
-        }
-
-        .preview-content code {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: 'Consolas', 'Monaco', monospace;
-            color: #ffd700;
-            font-size: 0.9rem;
-        }
-
-        .preview-content pre {
-            background: rgba(0, 0, 0, 0.3);
-            padding: 20px;
-            border-radius: 10px;
-            overflow-x: auto;
-            margin: 20px 0;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .preview-content pre code {
-            background: none;
-            padding: 0;
-            color: #a8e6cf;
-        }
-
-        .preview-content a {
-            color: #4facfe;
-            text-decoration: none;
-            border-bottom: 1px solid transparent;
-            transition: border-color 0.3s ease;
-        }
-
-        .preview-content a:hover {
-            border-bottom-color: #4facfe;
-        }
-
-        .preview-content table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
-            overflow: hidden;
-        }
-
-        .preview-content th {
-            background: rgba(79, 172, 254, 0.2);
-            color: #4facfe;
-            padding: 15px;
-            text-align: left;
-            font-weight: 600;
-        }
-
-        .preview-content td {
-            color: white;
-            padding: 12px 15px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .preview-content hr {
-            border: none;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, #4facfe, transparent);
-            margin: 30px 0;
-        }
-
-        .clear-button {
-            background: linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%);
-            color: white;
-            padding: 10px 25px;
-            border: none;
-            border-radius: 25px;
-            cursor: pointer;
-            font-size: 1rem;
-            margin: 10px;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
-        }
-
-        .clear-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.6);
-        }
-
-        .download-button {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            color: white;
-            padding: 10px 25px;
-            border: none;
-            border-radius: 25px;
-            cursor: pointer;
-            font-size: 1rem;
-            margin: 10px;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
-        }
-
-        .download-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(79, 172, 254, 0.6);
-        }
-
-        .button-container {
-            text-align: center;
-            margin-top: 20px;
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                margin: 10px;
-                border-radius: 15px;
-            }
-            
-            .header h1 {
-                font-size: 2rem;
-            }
-            
-            .upload-section, .preview-section {
-                padding: 25px;
-            }
-            
-            .preview-content {
-                padding: 25px;
-            }
-            
-            .preview-content h1 {
-                font-size: 2rem;
-            }
+        @media (max-width: 900px) {
+            .main-content { flex-direction: column; }
+            .editor-section { border-right: none; border-bottom: 1px solid var(--border-color); min-height: 40vh; }
+            .main-content.editor-hidden .editor-section { display: none; }
+            .container { margin: 10px; width: calc(100% - 20px); }
         }
     </style>
 </head>
 <body>
+    <div id="readingProgress"></div>
     <div class="container">
         <div class="header">
-            <h1>✨ Markdown Previewer</h1>
-            <p>Upload your markdown files and see them beautifully formatted</p>
+            <h1>🔥 Live Markdown Editor & Reader</h1>
+            <p>Write, read, and export with powerful reading controls.</p>
         </div>
         
-        <div class="upload-section">
-            <div class="file-input-container">
-                <input type="file" id="fileInput" class="file-input" accept=".md,.markdown,.txt">
-                <button class="file-input-button">
-                    📁 Choose Markdown File
-                </button>
+        <div class="main-content" id="mainContent">
+            <div class="editor-section">
+                <div class="pane-header">
+                    <span>📝 Editor</span>
+                    <div class="file-input-container" style="position:relative; display:inline-block;">
+                        <input type="file" id="fileInput" accept=".md,.markdown,.txt" style="position:absolute; opacity:0; width:100%; height:100%; cursor:pointer;">
+                        <button class="file-input-button">📂 Upload</button>
+                    </div>
+                </div>
+                <textarea id="markdownInput"></textarea>
+                <div class="file-name" id="fileName"></div>
             </div>
-            <div class="file-name" id="fileName"></div>
-        </div>
-        
-        <div class="preview-section" id="previewSection">
-            <div class="preview-content" id="previewContent"></div>
-            <div class="button-container">
-                <button class="download-button" onclick="downloadPDF()">📄 Download as PDF</button>
-                <button class="clear-button" onclick="clearPreview()">🗑️ Clear Preview</button>
+            
+            <div class="preview-section" id="previewSection">
+                <div class="pane-header">
+                    <span id="previewHeaderTitle">✨ Preview</span>
+                    <div class="header-controls">
+                        <button class="icon-button" id="toggleEditorBtn" title="Toggle Editor View">👁️</button>
+                        <button class="icon-button" id="fullscreenBtn" title="Toggle Fullscreen">⛶</button>
+                        <button class="icon-button" id="settingsBtn" title="Reading Settings">⚙️</button>
+                        <div class="settings-panel" id="readingSettings">
+                            <div class="setting">
+                                <span class="setting-label">Theme (Dark/Light)</span>
+                                <div class="setting-controls">
+                                    <button class="icon-button" id="themeToggleBtn">☀️</button>
+                                </div>
+                            </div>
+                            <div class="setting">
+                                <span class="setting-label">Font Size</span>
+                                <div class="setting-controls">
+                                    <button class="icon-button" id="fontDecreaseBtn">-</button>
+                                    <button class="icon-button" id="fontIncreaseBtn">+</button>
+                                </div>
+                            </div>
+                             <div class="setting">
+                                <span class="setting-label">Line Spacing</span>
+                                <div class="setting-controls">
+                                    <button class="icon-button" id="lineHeightDecreaseBtn">-</button>
+                                    <button class="icon-button" id="lineHeightIncreaseBtn">+</button>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="file-input-button" id="downloadBtn" style="margin-left: 10px;">📄 PDF</button>
+                    </div>
+                </div>
+                <div id="previewContentWrapper">
+                    <div class="preview-content" id="previewContent"></div>
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- Core Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.2/marked.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
     <script>
-        const fileInput = document.getElementById('fileInput');
-        const fileName = document.getElementById('fileName');
-        const previewSection = document.getElementById('previewSection');
+        // --- ELEMENTS ---
+        const markdownInput = document.getElementById('markdownInput');
         const previewContent = document.getElementById('previewContent');
-        let currentFileName = '';
+        const mainContent = document.getElementById('mainContent');
+        const toggleEditorBtn = document.getElementById('toggleEditorBtn');
+        const previewHeaderTitle = document.getElementById('previewHeaderTitle');
+        const settingsBtn = document.getElementById('settingsBtn');
+        const settingsPanel = document.getElementById('readingSettings');
+        const themeToggleBtn = document.getElementById('themeToggleBtn');
+        const fontIncreaseBtn = document.getElementById('fontIncreaseBtn');
+        const fontDecreaseBtn = document.getElementById('fontDecreaseBtn');
+        const lineHeightIncreaseBtn = document.getElementById('lineHeightIncreaseBtn');
+        const lineHeightDecreaseBtn = document.getElementById('lineHeightDecreaseBtn');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
 
-        fileInput.addEventListener('change', handleFileSelect);
+        // --- STATE & CONFIG ---
+        let currentFontSize = 1; // em
+        let currentLineHeight = 1.8; // unitless
+        let currentFileName = 'markdown-export';
+        const defaultMarkdown = `# Welcome to your Upgraded Markdown App!
 
-        function handleFileSelect(event) {
-            const file = event.target.files[0];
-            
-            if (!file) return;
-            
-            // Store current file name for PDF naming
-            currentFileName = file.name.replace(/\.(md|markdown|txt)$/i, '');
-            
-            // Display file name
-            fileName.textContent = `Selected: ${file.name}`;
-            
-            // Read file
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const markdown = e.target.result;
-                renderMarkdown(markdown);
-            };
-            reader.readAsText(file);
-        }
+This is a **live previewer** with enhanced **reading controls**. The PDF export is now fixed!
 
-        function renderMarkdown(markdown) {
-            // Configure marked options
-            marked.setOptions({
-                breaks: true,
-                gfm: true,
-                tables: true,
-                sanitize: false
-            });
-            
-            // Convert markdown to HTML
-            const html = marked.parse(markdown);
-            
-            // Display preview
-            previewContent.innerHTML = html;
-            previewSection.style.display = 'block';
-            
-            // Smooth scroll to preview
-            previewSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
+## New Reading Features
+- **Toggle Editor**: Click the 👁️ icon to hide the editor and focus on reading.
+- **Reading Settings**: Click the ⚙️ icon to open the settings panel.
+  - **Light/Dark Mode**: Switch themes for comfort.
+  - **Font Size**: Adjust text size.
+  - **Line Spacing**: Change line height for readability.
+- **Fullscreen Mode**: Click the ⛶ icon for a completely immersive experience.
+- **Reading Progress Bar**: A bar at the top shows your scroll progress.
 
-        function clearPreview() {
-            previewSection.style.display = 'none';
-            previewContent.innerHTML = '';
-            fileName.textContent = '';
-            fileInput.value = '';
-            currentFileName = '';
-            
-            // Scroll back to top
-            document.querySelector('.upload-section').scrollIntoView({ behavior: 'smooth' });
+---
+
+### Example: A code block
+\`\`\`javascript
+// This is a javascript code block with syntax highlighting!
+function greet(name) {
+    console.log(\`Hello, \${name}!\`);
+}
+greet('World');
+\`\`\`
+`;
+        
+        // --- CORE FUNCTIONS ---
+        function renderMarkdown() {
+            previewContent.innerHTML = marked.parse(markdownInput.value);
+            hljs.highlightAll();
         }
 
         function downloadPDF() {
-            if (!previewContent.innerHTML) {
-                alert('Please upload and preview a markdown file first!');
-                return;
-            }
-
-            // Show loading indicator
-            const downloadBtn = document.querySelector('.download-button');
             const originalText = downloadBtn.innerHTML;
-            downloadBtn.innerHTML = '⏳ Generating PDF...';
+            downloadBtn.innerHTML = '⏳';
             downloadBtn.disabled = true;
 
-            try {
-                // Create new jsPDF instance
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF('p', 'mm', 'a4');
-                
-                // Page settings
-                const pageWidth = 210; // A4 width in mm
-                const pageHeight = 297; // A4 height in mm
-                const margin = 20;
-                const maxWidth = pageWidth - (margin * 2);
-                let yPosition = margin;
-                
-                // Set initial font
-                doc.setFont('helvetica');
-                
-                // Get all text content from the preview
-                const textContent = extractTextContent(previewContent);
-                
-                // Process each element
-                textContent.forEach(item => {
-                    // Check if we need a new page
-                    if (yPosition > pageHeight - margin) {
-                        doc.addPage();
-                        yPosition = margin;
-                    }
-                    
-                    // Set font size and color based on element type
-                    switch(item.type) {
-                        case 'h1':
-                            doc.setFontSize(24);
-                            doc.setTextColor(79, 172, 254); // Blue
-                            doc.setFont('helvetica', 'bold');
-                            break;
-                        case 'h2':
-                            doc.setFontSize(20);
-                            doc.setTextColor(102, 126, 234); // Purple-blue
-                            doc.setFont('helvetica', 'bold');
-                            break;
-                        case 'h3':
-                            doc.setFontSize(16);
-                            doc.setTextColor(118, 75, 162); // Deep purple
-                            doc.setFont('helvetica', 'bold');
-                            break;
-                        case 'h4':
-                            doc.setFontSize(14);
-                            doc.setTextColor(156, 136, 255); // Light purple
-                            doc.setFont('helvetica', 'bold');
-                            break;
-                        case 'h5':
-                            doc.setFontSize(12);
-                            doc.setTextColor(183, 148, 246); // Lighter purple
-                            doc.setFont('helvetica', 'bold');
-                            break;
-                        case 'h6':
-                            doc.setFontSize(11);
-                            doc.setTextColor(214, 188, 250); // Very light purple
-                            doc.setFont('helvetica', 'bold');
-                            break;
-                        default:
-                            doc.setFontSize(11);
-                            doc.setTextColor(255, 255, 255); // White for paragraphs
-                            doc.setFont('helvetica', 'normal');
-                    }
-                    
-                    // Add text with word wrapping
-                    const lines = doc.splitTextToSize(item.text, maxWidth);
-                    lines.forEach(line => {
-                        if (yPosition > pageHeight - margin) {
-                            doc.addPage();
-                            yPosition = margin;
-                        }
-                        doc.text(line, margin, yPosition);
-                        yPosition += doc.getLineHeight() / doc.internal.scaleFactor;
-                    });
-                    
-                    // Add extra spacing after headings
-                    if (item.type.startsWith('h')) {
-                        yPosition += 5;
-                    } else {
-                        yPosition += 3;
-                    }
-                });
-                
-                // Set PDF background to dark (simulate dark theme)
-                const totalPages = doc.internal.getNumberOfPages();
-                for (let i = 1; i <= totalPages; i++) {
-                    doc.setPage(i);
-                    doc.setFillColor(26, 26, 26); // Dark background
-                    doc.rect(0, 0, pageWidth, pageHeight, 'F');
-                }
-                
-                // Re-add all text on top of dark background
-                yPosition = margin;
-                let currentPage = 1;
-                doc.setPage(1);
-                
-                textContent.forEach(item => {
-                    // Check if we need to move to next page
-                    if (yPosition > pageHeight - margin) {
-                        currentPage++;
-                        doc.setPage(currentPage);
-                        yPosition = margin;
-                    }
-                    
-                    // Set font properties again
-                    switch(item.type) {
-                        case 'h1':
-                            doc.setFontSize(24);
-                            doc.setTextColor(79, 172, 254);
-                            doc.setFont('helvetica', 'bold');
-                            break;
-                        case 'h2':
-                            doc.setFontSize(20);
-                            doc.setTextColor(102, 126, 234);
-                            doc.setFont('helvetica', 'bold');
-                            break;
-                        case 'h3':
-                            doc.setFontSize(16);
-                            doc.setTextColor(118, 75, 162);
-                            doc.setFont('helvetica', 'bold');
-                            break;
-                        case 'h4':
-                            doc.setFontSize(14);
-                            doc.setTextColor(156, 136, 255);
-                            doc.setFont('helvetica', 'bold');
-                            break;
-                        case 'h5':
-                            doc.setFontSize(12);
-                            doc.setTextColor(183, 148, 246);
-                            doc.setFont('helvetica', 'bold');
-                            break;
-                        case 'h6':
-                            doc.setFontSize(11);
-                            doc.setTextColor(214, 188, 250);
-                            doc.setFont('helvetica', 'bold');
-                            break;
-                        default:
-                            doc.setFontSize(11);
-                            doc.setTextColor(255, 255, 255);
-                            doc.setFont('helvetica', 'normal');
-                    }
-                    
-                    const lines = doc.splitTextToSize(item.text, maxWidth);
-                    lines.forEach(line => {
-                        if (yPosition > pageHeight - margin) {
-                            currentPage++;
-                            doc.setPage(currentPage);
-                            yPosition = margin;
-                        }
-                        doc.text(line, margin, yPosition);
-                        yPosition += doc.getLineHeight() / doc.internal.scaleFactor;
-                    });
-                    
-                    if (item.type.startsWith('h')) {
-                        yPosition += 5;
-                    } else {
-                        yPosition += 3;
-                    }
-                });
-                
-                // Save the PDF
-                const filename = currentFileName ? `${currentFileName}.pdf` : 'markdown-preview.pdf';
-                doc.save(filename);
-                
-            } catch (error) {
-                console.error('PDF generation failed:', error);
-                alert('Failed to generate PDF. Please try again.');
-            } finally {
-                // Reset button
+            const element = document.getElementById('previewContent');
+            const opt = {
+              margin: [15, 15, 15, 15],
+              filename: `${currentFileName}.pdf`,
+              image: { type: 'jpeg', quality: 0.98 },
+              html2canvas: { scale: 2, useCORS: true, backgroundColor: null, logging: false },
+              jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().from(element).set(opt).save().then(() => {
                 downloadBtn.innerHTML = originalText;
                 downloadBtn.disabled = false;
-            }
-        }
-        
-        function extractTextContent(element) {
-            const content = [];
-            
-            function traverse(node) {
-                if (node.nodeType === Node.TEXT_NODE) {
-                    const text = node.textContent.trim();
-                    if (text) {
-                        const parent = node.parentElement;
-                        const tagName = parent.tagName.toLowerCase();
-                        content.push({
-                            type: tagName,
-                            text: text
-                        });
-                    }
-                } else if (node.nodeType === Node.ELEMENT_NODE) {
-                    const tagName = node.tagName.toLowerCase();
-                    
-                    if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(tagName)) {
-                        content.push({
-                            type: tagName,
-                            text: node.textContent.trim()
-                        });
-                    } else if (tagName === 'p') {
-                        const text = node.textContent.trim();
-                        if (text) {
-                            content.push({
-                                type: 'p',
-                                text: text
-                            });
-                        }
-                    } else if (tagName === 'li') {
-                        const text = node.textContent.trim();
-                        if (text) {
-                            content.push({
-                                type: 'li',
-                                text: '• ' + text
-                            });
-                        }
-                    } else if (tagName === 'blockquote') {
-                        const text = node.textContent.trim();
-                        if (text) {
-                            content.push({
-                                type: 'blockquote',
-                                text: '> ' + text
-                            });
-                        }
-                    } else {
-                        // Recursively process child nodes
-                        for (let child of node.childNodes) {
-                            traverse(child);
-                        }
-                    }
-                }
-            }
-            
-            traverse(element);
-            return content;
+            }).catch((error) => {
+                alert('PDF generation failed. See console for details.');
+                console.error(error);
+                downloadBtn.innerHTML = originalText;
+                downloadBtn.disabled = false;
+            });
         }
 
-        // Drag and drop functionality
-        const uploadSection = document.querySelector('.upload-section');
-        
-        uploadSection.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadSection.style.background = 'linear-gradient(135deg, rgba(79, 172, 254, 0.1), rgba(118, 75, 162, 0.1))';
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file || !file.name.match(/\.(md|markdown|txt)$/i)) return;
+            currentFileName = file.name.replace(/\.(md|markdown|txt)$/i, '');
+            document.getElementById('fileName').textContent = `Editing: ${file.name}`;
+            const reader = new FileReader();
+            reader.onload = e => { markdownInput.value = e.target.result; renderMarkdown(); };
+            reader.readAsText(file);
+        }
+
+        function updateReadingProgress() {
+            const preview = document.getElementById('previewSection');
+            const scrollableHeight = preview.scrollHeight - preview.clientHeight;
+            const progress = (preview.scrollTop / scrollableHeight) * 100;
+            document.getElementById('readingProgress').style.width = `${progress}%`;
+        }
+
+        function updatePreviewStyles() {
+            previewContent.style.fontSize = `${currentFontSize}em`;
+            previewContent.style.lineHeight = currentLineHeight;
+        }
+
+        // --- EVENT LISTENERS ---
+        markdownInput.addEventListener('input', renderMarkdown);
+        document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+        document.getElementById('previewSection').addEventListener('scroll', updateReadingProgress);
+        downloadBtn.addEventListener('click', downloadPDF);
+
+        toggleEditorBtn.addEventListener('click', () => {
+            mainContent.classList.toggle('editor-hidden');
+            toggleEditorBtn.textContent = mainContent.classList.contains('editor-hidden') ? '📖' : '👁️';
+            toggleEditorBtn.title = mainContent.classList.contains('editor-hidden') ? 'Show Editor' : 'Hide Editor';
+            previewHeaderTitle.textContent = mainContent.classList.contains('editor-hidden') ? '📖 Reading Mode' : '✨ Preview';
         });
-        
-        uploadSection.addEventListener('dragleave', () => {
-            uploadSection.style.background = '';
+
+        settingsBtn.addEventListener('click', (e) => { e.stopPropagation(); settingsPanel.classList.toggle('active'); });
+        document.addEventListener('click', () => settingsPanel.classList.remove('active'));
+        settingsPanel.addEventListener('click', e => e.stopPropagation());
+
+        themeToggleBtn.addEventListener('click', () => {
+            document.body.classList.toggle('light-theme');
+            themeToggleBtn.textContent = document.body.classList.contains('light-theme') ? '🌙' : '☀️';
         });
-        
-        uploadSection.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadSection.style.background = '';
-            
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                const file = files[0];
-                if (file.name.match(/\.(md|markdown|txt)$/i)) {
-                    fileInput.files = files;
-                    currentFileName = file.name.replace(/\.(md|markdown|txt)$/i, '');
-                    fileName.textContent = `Selected: ${file.name}`;
-                    
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        const markdown = e.target.result;
-                        renderMarkdown(markdown);
-                    };
-                    reader.readAsText(file);
-                } else {
-                    alert('Please select a markdown file (.md, .markdown, or .txt)');
-                }
-            }
+
+        fontIncreaseBtn.addEventListener('click', () => { currentFontSize += 0.1; updatePreviewStyles(); });
+        fontDecreaseBtn.addEventListener('click', () => { currentFontSize = Math.max(0.5, currentFontSize - 0.1); updatePreviewStyles(); });
+
+        lineHeightIncreaseBtn.addEventListener('click', () => { currentLineHeight += 0.1; updatePreviewStyles(); });
+        lineHeightDecreaseBtn.addEventListener('click', () => { currentLineHeight = Math.max(1.2, currentLineHeight - 0.1); updatePreviewStyles(); });
+
+        fullscreenBtn.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.getElementById('previewSection').requestFullscreen().catch(err => console.error(err));
+            } else { document.exitFullscreen(); }
         });
+        document.addEventListener('fullscreenchange', () => { fullscreenBtn.textContent = document.fullscreenElement ? '✕' : '⛶'; });
+
+        // --- INITIALIZATION ---
+        window.onload = () => {
+            marked.setOptions({ breaks: true, gfm: true, tables: true, sanitize: false });
+            markdownInput.value = defaultMarkdown;
+            renderMarkdown();
+            updatePreviewStyles();
+        };
     </script>
 </body>
 </html>
